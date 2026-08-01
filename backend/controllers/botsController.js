@@ -3,6 +3,7 @@ const UserBot = require('../models/UserBot');
 const BotTemplate = require('../models/BotTemplate');
 const DeploymentPlatform = require('../models/DeploymentPlatform');
 const { getPlatformClient } = require('../utils/platformClients');
+const { slugifyAppName } = require('../utils/slug');
 
 // GET /bots/deployment-status
 exports.getDeploymentStatus = async (req, res, next) => {
@@ -70,7 +71,8 @@ exports.deployBot = async (req, res, next) => {
 
     const template = botId ? await BotTemplate.findById(botId) : null;
     const client = getPlatformClient(platformDoc.slug);
-    const { remoteAppId } = await client.deploy({ sessionId, botName, prefix, githubRepo: template?.sourceCodeUrl });
+    const appName = slugifyAppName(user.name, botName || template?.name);
+    const { remoteAppId } = await client.deploy({ appName, sessionId, botName, prefix, githubRepo: template?.sourceCodeUrl });
 
     const bot = await UserBot.create({
       userId: user._id,
@@ -143,7 +145,8 @@ exports.changePlatform = async (req, res, next) => {
     if (bot.remoteAppId) await oldClient.destroy(bot.remoteAppId);
 
     const newClient = getPlatformClient(newPlatformDoc.slug);
-    const { remoteAppId } = await newClient.deploy({ sessionId: bot.sessionId, botName: bot.botName, prefix: bot.prefix, githubRepo: bot.githubRepo });
+    const appName = slugifyAppName(req.user.name, bot.botName);
+    const { remoteAppId } = await newClient.deploy({ appName, sessionId: bot.sessionId, botName: bot.botName, prefix: bot.prefix, githubRepo: bot.githubRepo });
 
     bot.hostingPlatform = newPlatformDoc.slug;
     bot.remoteAppId = remoteAppId;
