@@ -18,7 +18,6 @@ const userSchema = new mongoose.Schema({
   },
 
   coinsBalance: { type: Number, default: 0 },
-  referralCode: { type: String, default: null, unique: true, sparse: true },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
   role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
