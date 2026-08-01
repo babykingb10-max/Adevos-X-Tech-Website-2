@@ -152,16 +152,29 @@ async function seedUpdates() {
 }
 
 async function seedAdmin() {
-  const existing = await User.findOne({ role: 'ADMIN' });
-  if (existing) return;
   const username = process.env.ADMIN_DEFAULT_USERNAME || 'admin';
   const password = process.env.ADMIN_DEFAULT_PASSWORD || 'change_this_immediately';
+  const email = `${username.toLowerCase()}@adevosxtech.site`;
   const passwordHash = await bcrypt.hash(password, 10);
+
+  // Upsert: if this admin account already exists, keep its password in sync
+  // with whatever ADMIN_DEFAULT_USERNAME/PASSWORD is currently set to in
+  // your Heroku Config Vars. This means changing those Config Vars and
+  // redeploying always updates the real login — no manual DB access needed.
+  const existing = await User.findOne({ email, role: 'ADMIN' });
+  if (existing) {
+    existing.name = username;
+    existing.passwordHash = passwordHash;
+    await existing.save();
+    console.log(`[seed] Synced admin credentials for username: ${username}.`);
+    return;
+  }
+
   await User.create({
-    name: username, email: `${username}@adevosxtech.site`, passwordHash,
+    name: username, email, passwordHash,
     emailVerified: true, role: 'ADMIN', status: 'ACTIVE'
   });
-  console.log(`[seed] Default admin created — username: ${username}. Change the password immediately.`);
+  console.log(`[seed] Default admin created — username: ${username}.`);
 }
 
 module.exports = { runSeed };
