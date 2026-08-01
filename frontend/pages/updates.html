@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Updates | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <div class="flex-between">
+    <div>
+      <h1>Updates & Announcements</h1>
+      <p class="text-muted">Stay current with new features and maintenance notices.</p>
+    </div>
+    <button class="btn btn-outline btn-sm" id="markAllBtn">Mark All As Read</button>
+  </div>
+</div>
+
+<main class="container" id="updatesList">
+  <p class="text-muted">Loading updates...</p>
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  function readIds() {
+    return JSON.parse(localStorage.getItem('adevos_read_updates') || '[]');
+  }
+  function markReadLocal(id) {
+    const ids = readIds();
+    if (!ids.includes(id)) { ids.push(id); localStorage.setItem('adevos_read_updates', JSON.stringify(ids)); }
+  }
+
+  async function load() {
+    const container = document.getElementById('updatesList');
+    try {
+      const updates = await Api.getUpdates();
+      const read = readIds();
+      if (!updates.length) { container.innerHTML = `<div class="empty-state"><p>No updates yet.</p></div>`; return; }
+      container.innerHTML = `<div class="cards-grid">${updates.map(u => `
+        <div class="app-card" onclick="openUpdate('${u._id}')" style="cursor:pointer;">
+          <div class="flex-between">
+            <span class="badge">${u.category.replace('_',' ')}</span>
+            ${!read.includes(u._id) ? '<span class="status-dot active" title="Unread"></span>' : ''}
+          </div>
+          <h3>${u.title}</h3>
+          <p class="text-muted">${u.summary}</p>
+          <span class="text-muted" style="font-size:0.78rem;">${new Date(u.createdAt).toLocaleDateString()}</span>
+        </div>
+      `).join('')}</div>`;
+      window._updatesCache = updates;
+    } catch (err) {
+      container.innerHTML = `<div class="empty-state"><p>${err.message || 'Could not load updates.'}</p></div>`;
+    }
+  }
+
+  function openUpdate(id) {
+    const u = (window._updatesCache || []).find(x => x._id === id);
+    if (!u) return;
+    markReadLocal(id);
+    if (Auth.isLoggedIn()) Api.markUpdateRead(id).catch(() => {});
+    UI.showModal(u.title, u.fullContent);
+    load();
+  }
+
+  document.getElementById('markAllBtn').addEventListener('click', async () => {
+    const all = (window._updatesCache || []).map(u => u._id);
+    localStorage.setItem('adevos_read_updates', JSON.stringify(all));
+    if (Auth.isLoggedIn()) { try { await Api.markAllUpdatesRead(); } catch {} }
+    UI.showToast('All updates marked as read.', 'success');
+    load();
+  });
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
+
