@@ -33,6 +33,28 @@
   --max-width: 1200px;
 }
 
+/* Light theme override — activated by Theme.apply() setting
+   <html data-theme="light">. Same token names, different values,
+   so every component built on var(--bg-dark) etc. just works. */
+html[data-theme="light"] {
+  --bg-dark: #f4f9f6;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f0f4f2;
+  --text-primary: #0d1712;
+  --text-muted: #5c6b63;
+  --border-neon: 1px solid rgba(0, 153, 61, 0.3);
+  --border-soft: 1px solid rgba(0, 0, 0, 0.08);
+  --neon-green: #0a9e42;
+  --neon-green-dim: rgba(10, 158, 66, 0.12);
+  --shadow-neon: 0 0 14px rgba(10, 158, 66, 0.2);
+}
+html[data-theme="light"] h1, html[data-theme="light"] h2, html[data-theme="light"] h3,
+html[data-theme="light"] h4, html[data-theme="light"] .section-title, html[data-theme="light"] .brand-title {
+  color: #0d1712;
+}
+html[data-theme="light"] .btn-primary { color: #ffffff; }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
@@ -113,4 +135,3 @@ b, strong, .text-bold {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
 }
-
