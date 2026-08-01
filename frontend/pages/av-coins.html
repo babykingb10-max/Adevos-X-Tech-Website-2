@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AV Coins | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1>AV Coins</h1>
+  <p class="text-muted">Earn coins by referring friends and use them to deploy bots.</p>
+</div>
+
+<main class="container" id="coinsContainer" style="max-width:640px;">
+  <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading your wallet...</p></div>
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  async function load() {
+    if (!Auth.requireLogin()) return;
+    const container = document.getElementById('coinsContainer');
+    try {
+      const wallet = await Api.getCoinsWallet();
+
+      container.innerHTML = `
+        <div class="stats-row">
+          <div class="stat-box"><div class="value">${wallet.balance}</div><div class="label">AV Coins Balance</div></div>
+          <div class="stat-box"><div class="value">${wallet.totalReferrals || 0}</div><div class="label">Total Referrals</div></div>
+          <div class="stat-box"><div class="value">${wallet.earnedThisMonth || 0}</div><div class="label">Earned This Month</div></div>
+        </div>
+
+        <div class="app-card" style="margin-bottom:18px;">
+          <h3>Your Referral Link</h3>
+          ${wallet.referralCode ? `
+            <div class="form-group">
+              <input class="form-control" id="referralLinkInput" readonly value="https://adevosxtech.site/signup?ref=${wallet.referralCode}">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline" id="copyLinkBtn"><i class="fa-solid fa-copy"></i> Copy Link</button>
+              <button class="btn btn-primary" id="shareWhatsappBtn"><i class="fa-brands fa-whatsapp"></i> Share</button>
+            </div>
+          ` : `
+            <p class="text-muted">Register as an affiliate to get your unique referral link.</p>
+            <form id="affiliateForm">
+              <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" name="fullName" required></div>
+              <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" name="phoneNumber"></div>
+              <div class="form-group">
+                <label class="form-label">Where do you share links most?</label>
+                <select class="form-control" name="preferredPlatform">
+                  <option>WhatsApp Groups</option><option>Telegram Channels</option><option>Facebook/Instagram</option><option>TikTok</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Generate Your Referral Link</button>
+            </form>
+          `}
+        </div>
+
+        <div class="app-card" style="margin-bottom:18px;">
+          <h3>How AV Coins Work</h3>
+          <p class="text-muted">Earn coins whenever someone signs up through your referral link and verifies their email. Use coins to pay for bot deployment instead of cash.</p>
+        </div>
+
+        <div class="app-card" id="historyCard">
+          <h3>Referral History</h3>
+          <div id="historyList"><p class="text-muted">Loading...</p></div>
+        </div>
+      `;
+
+      if (wallet.referralCode) {
+        document.getElementById('copyLinkBtn').addEventListener('click', () => {
+          navigator.clipboard.writeText(document.getElementById('referralLinkInput').value);
+          UI.showToast('Link copied.', 'success');
+        });
+        document.getElementById('shareWhatsappBtn').addEventListener('click', () => {
+          const msg = encodeURIComponent(`Deploy your WhatsApp bot in seconds with Adevos-X Tech: https://adevosxtech.site/signup?ref=${wallet.referralCode}`);
+          window.open(`https://wa.me/?text=${msg}`, '_blank');
+        });
+        loadHistory();
+      } else {
+        document.getElementById('affiliateForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!NetworkGuard.requireOnline()) return;
+          const payload = Object.fromEntries(new FormData(e.target).entries());
+          try { await Api.generateReferralLink(payload); UI.showToast('Referral link created.', 'success'); load(); }
+          catch (err) { UI.showToast(err.message || 'Could not create link.', 'error'); }
+        });
+      }
+    } catch (err) {
+      container.innerHTML = `<div class="empty-state"><p>${err.message || 'Could not load your wallet.'}</p></div>`;
+    }
+  }
+
+  async function loadHistory() {
+    const list = document.getElementById('historyList');
+    try {
+      const history = await Api.getReferralHistory();
+      if (!history.length) { list.innerHTML = `<p class="text-muted">No referrals yet.</p>`; return; }
+      list.innerHTML = history.map(h => `
+        <div class="flex-between" style="padding:8px 0;border-bottom:var(--border-soft);">
+          <span>${h.maskedEmail}</span>
+          <span class="badge" style="color:${h.verified ? 'var(--neon-green)' : 'var(--neon-yellow)'};">${h.verified ? `+${h.coinsAwarded} Coins` : 'Pending'}</span>
+        </div>
+      `).join('');
+    } catch { list.innerHTML = `<p class="text-muted">Could not load history.</p>`; }
+  }
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
+
