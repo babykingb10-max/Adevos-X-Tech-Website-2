@@ -23,7 +23,10 @@ const UI = {
     el.innerHTML = `
       <header class="top-header">
         <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-        <a href="/index.html" class="brand-title">${AppConfig.siteSettings.siteName}</a>
+        <a href="/index.html" class="brand-title" style="display:flex;align-items:center;gap:8px;">
+          <img src="/assets/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;">
+          <span>${AppConfig.siteSettings.siteName}</span>
+        </a>
         ${user
           ? `<button class="icon-btn avatar-btn" id="avatarBtn" aria-label="Account menu">
                <img src="${user.profilePic || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + user.email}" alt="${user.name}">
@@ -183,7 +186,17 @@ const UI = {
     document.querySelectorAll('[data-toggle-submenu]').forEach(item => {
       item.addEventListener('click', () => {
         const id = item.getAttribute('data-toggle-submenu');
-        document.getElementById(`submenu-${id}`).classList.toggle('open');
+        const target = document.getElementById(`submenu-${id}`);
+        const isOpen = target.classList.contains('open');
+
+        // Accordion behavior: close every other submenu first
+        document.querySelectorAll('.sidebar-submenu.open').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.sidebar-item.active').forEach(el => el.classList.remove('active'));
+
+        if (!isOpen) {
+          target.classList.add('open');
+          item.classList.add('active');
+        }
       });
     });
 
