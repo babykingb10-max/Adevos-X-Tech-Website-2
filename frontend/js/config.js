@@ -8,7 +8,7 @@
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:5000/api/v1'
-  : 'https://api.adevosxtech.site/api/v1'; // set to your deployed Heroku backend URL
+  : 'https://adevos-x-tech-website-e3dd767aec0e.herokuapp.com/api/v1';
 
 const AppConfig = {
   siteSettings: {
@@ -19,7 +19,7 @@ const AppConfig = {
       channel: 'https://t.me/replace-with-real-channel'
     },
     freeBotFeatureEnabled: true,
-    freeBotUrl: 'https://adevos-min-bot.site',
+    freeBotUrl: 'https://minbot.adevosxtech.site',
     bgMusicEnabled: true
   },
 
@@ -105,4 +105,3 @@ const AppConfig = {
     { icon: 'fa-solid fa-user-tie', title: 'Meet a Developer', description: 'Talk directly with the team.', btnText: 'Contact', action: 'CONTACT_DEVELOPER' }
   ]
 };
-
