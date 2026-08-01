@@ -169,7 +169,7 @@
           clearInterval(pollTimer);
           UI.showModal('Payment Successful', 'You can now deploy your bot.', {
             confirmText: 'Now You Can Deploy',
-            onConfirm: () => window.location.href = isDeployerUpgrade ? '/index.html' : '/pages/available-bots.html'
+            onConfirm: () => window.location.href = isDeployerUpgrade ? '/' : '/pages/available-bots.html'
           });
         }
       } catch { /* keep polling */ }
