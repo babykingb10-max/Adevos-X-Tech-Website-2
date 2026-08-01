@@ -31,4 +31,3 @@
 
 .inline-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px; }
 .inline-actions { display: flex; gap: 6px; }
-
