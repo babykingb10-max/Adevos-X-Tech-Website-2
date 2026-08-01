@@ -19,14 +19,14 @@ const AppConfig = {
       channel: 'https://t.me/replace-with-real-channel'
     },
     freeBotFeatureEnabled: true,
-    freeBotUrl: 'https://minbot.adevosxtech.site',
+    freeBotUrl: 'https://adevos-min-bot.site',
     bgMusicEnabled: true
   },
 
   sidebar: [
     {
-      id: 'home', title: 'Home', icon: 'fa-house', target: '/index.html',
-      subItems: [{ title: 'Dashboard', target: '/index.html' }]
+      id: 'home', title: 'Home', icon: 'fa-house', target: '/',
+      subItems: [{ title: 'Dashboard', target: '/' }]
     },
     {
       id: 'updates', title: 'Updates', icon: 'fa-bell', target: '/pages/updates.html',
@@ -49,8 +49,8 @@ const AppConfig = {
       subItems: [{ title: 'Explore Tutorials', target: '/pages/tutorials.html' }]
     },
     {
-      id: 'feedback', title: 'Feedback', icon: 'fa-comment-dots', target: '/index.html#feedback-card',
-      subItems: [{ title: 'Send Your Feedback', target: '/index.html#feedback-card' }]
+      id: 'feedback', title: 'Feedback', icon: 'fa-comment-dots', target: '/#feedback-card',
+      subItems: [{ title: 'Send Your Feedback', target: '/#feedback-card' }]
     },
     {
       id: 'support', title: 'Support', icon: 'fa-headset',
@@ -61,8 +61,8 @@ const AppConfig = {
       ]
     },
     {
-      id: 'developer', title: 'Developer', icon: 'fa-code', target: '/index.html#developer-card',
-      subItems: [{ title: 'Meet a Developer', target: '/index.html#developer-card' }]
+      id: 'developer', title: 'Developer', icon: 'fa-code', target: '/#developer-card',
+      subItems: [{ title: 'Meet a Developer', target: '/#developer-card' }]
     }
   ],
 
@@ -81,7 +81,7 @@ const AppConfig = {
     },
     {
       id: 'slide-4', heading: '24/7 Community Support', subtext: 'Get help anytime from our WhatsApp and Telegram community.',
-      btnText: 'Join Now', target: '/index.html#support-card'
+      btnText: 'Join Now', target: '/#support-card'
     }
   ],
 
