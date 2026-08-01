@@ -30,7 +30,7 @@ const Auth = {
   logout() {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
-    window.location.href = '/index.html';
+    window.location.href = '/';
   },
 
   // Call on protected pages (deploy, manage, av-coins, payment) to force login
@@ -47,4 +47,3 @@ const Auth = {
     return this.getUser()?.subscription?.plan === 'DEPLOYER';
   }
 };
-
