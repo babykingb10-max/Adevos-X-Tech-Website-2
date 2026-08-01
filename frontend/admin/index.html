@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel | Adevos-X Tech</title>
+<link rel="manifest" href="/admin/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-logo"><i class="fa-solid fa-user-shield"></i> Adevos Admin</div>
+    <nav class="admin-nav" id="adminNav">
+      <button data-panel="overview" class="active"><i class="fa-solid fa-chart-line"></i> Overview</button>
+      <button data-panel="slides"><i class="fa-solid fa-images"></i> Hero Slides</button>
+      <button data-panel="cards"><i class="fa-solid fa-table-cells"></i> Homepage Cards</button>
+      <button data-panel="bots"><i class="fa-solid fa-robot"></i> Bot Library</button>
+      <button data-panel="platforms"><i class="fa-solid fa-server"></i> Platforms</button>
+      <button data-panel="payments"><i class="fa-solid fa-credit-card"></i> Payments & Coins</button>
+      <button data-panel="users"><i class="fa-solid fa-users"></i> Users</button>
+      <button data-panel="active-bots"><i class="fa-solid fa-satellite-dish"></i> Active Bots</button>
+      <button data-panel="feedback"><i class="fa-solid fa-comment-dots"></i> Feedback & Tickets</button>
+      <button data-panel="updates"><i class="fa-solid fa-bullhorn"></i> Updates</button>
+      <button data-panel="tutorials"><i class="fa-solid fa-graduation-cap"></i> Tutorials</button>
+      <button data-panel="logs"><i class="fa-solid fa-clock-rotate-left"></i> Audit Log</button>
+    </nav>
+    <button class="btn btn-danger btn-block" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+  </aside>
+
+  <main class="admin-content" id="adminContent">
+    <p class="text-muted">Loading...</p>
+  </main>
+</div>
+
+<div id="app-overlay"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/ui.js"></script>
+<script src="js/adminApi.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
+
