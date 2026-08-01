@@ -10,13 +10,6 @@ const Admin = {
         btn.addEventListener('click', () => Admin.showPanel(btn.dataset.panel));
       });
       document.getElementById('logoutBtn')?.addEventListener('click', AdminAuth.logout);
-      document.getElementById('adminBackBtn')?.addEventListener('click', () => {
-        if (window.history.length > 1) window.history.back();
-        else window.location.href = '/';
-      });
-      const adminBackBtn = document.getElementById('adminBackBtn');
-      const cameFromInternalPage = document.referrer && document.referrer.startsWith(window.location.origin);
-      if (adminBackBtn && !cameFromInternalPage) adminBackBtn.style.display = 'none';
       await Admin.showPanel('overview');
     } catch (err) {
       Admin.showFatalError('Admin.init() crashed', err);
