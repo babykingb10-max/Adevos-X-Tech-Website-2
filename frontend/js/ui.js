@@ -22,20 +22,20 @@ const UI = {
     const user = Auth.getUser();
     el.innerHTML = `
       <header class="top-header">
-        <div style="display:flex;align-items:center;gap:2px;">
-          <button class="icon-btn" id="backBtn" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></button>
-          <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-        </div>
+        <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
         <a href="/" class="brand-title" style="display:flex;align-items:center;gap:8px;">
           <img src="/assets/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;">
           <span>${AppConfig.siteSettings.siteName}</span>
         </a>
-        ${user
-          ? `<button class="icon-btn avatar-btn" id="avatarBtn" aria-label="Account menu">
-               <img src="${user.profilePic || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + user.email}" alt="${user.name}">
-             </button>`
-          : `<a href="/pages/signin.html" class="btn btn-outline btn-sm">Sign In</a>`
-        }
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="icon-btn hide" id="backBtn" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></button>
+          ${user
+            ? `<button class="icon-btn avatar-btn" id="avatarBtn" aria-label="Account menu">
+                 <img src="${user.profilePic || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + user.email}" alt="${user.name}">
+               </button>`
+            : `<a href="/pages/signin.html" class="btn btn-outline btn-sm">Sign In</a>`
+          }
+        </div>
       </header>
       ${user ? `
       <div class="cyber-modal-overlay" id="profileMenu">
@@ -83,6 +83,13 @@ const UI = {
         <ul class="sidebar-nav">${items}</ul>
       </aside>
     `;
+
+    // Close the drawer whenever a real link is tapped, so hash-based
+    // navigation (e.g. "Send Your Feedback" -> /#feedback-card) is
+    // actually visible instead of scrolling silently behind the drawer.
+    el.querySelectorAll('.sidebar-submenu a').forEach(link => {
+      link.addEventListener('click', () => UI.closeSidebar());
+    });
   },
 
   renderFooter() {
@@ -186,9 +193,10 @@ const UI = {
       if (window.history.length > 1) window.history.back();
       else window.location.href = '/';
     });
-    if (window.location.pathname === '/') {
-      const backBtn = document.getElementById('backBtn');
-      if (backBtn) backBtn.style.visibility = 'hidden';
+    const backBtn = document.getElementById('backBtn');
+    const cameFromInternalPage = document.referrer && document.referrer.startsWith(window.location.origin);
+    if (backBtn && cameFromInternalPage && window.location.pathname !== '/') {
+      backBtn.classList.remove('hide');
     }
     document.getElementById('closeSidebarBtn')?.addEventListener('click', () => UI.closeSidebar());
     document.getElementById('sidebarOverlay')?.addEventListener('click', () => UI.closeSidebar());
