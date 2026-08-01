@@ -22,7 +22,25 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+// FRONTEND_URL can be a single URL or a comma-separated list
+// (e.g. your Vercel URL + your custom domain, once you have one).
+// If it's unset, every origin is allowed — useful during setup,
+// tighten it once your real domain is confirmed.
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // same-origin / curl / server-to-server
+    if (allowedOrigins.length === 0) return callback(null, true); // not configured yet — allow all
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn(`[CORS] Blocked request from origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    return callback(null, false);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Health check for uptime monitors / Heroku
