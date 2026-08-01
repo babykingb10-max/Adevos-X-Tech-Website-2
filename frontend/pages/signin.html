@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<main class="container" style="max-width:420px;padding-top:40px;">
+  <div class="app-card" id="authCard">
+    <h2 style="text-align:center;">Welcome to Adevos-X Tech</h2>
+    <p class="text-muted" style="text-align:center;">Sign in to deploy and manage your bots.</p>
+
+    <button class="btn btn-outline btn-block" id="googleBtn"><i class="fa-brands fa-google"></i> Continue with Google</button>
+    <button class="btn btn-outline btn-block" id="appleBtn"><i class="fa-brands fa-apple"></i> Continue with Apple</button>
+
+    <div class="flex-between" style="margin:10px 0;color:var(--text-muted);font-size:0.85rem;">
+      <hr style="flex:1;border-color:rgba(255,255,255,0.08);"> or <hr style="flex:1;border-color:rgba(255,255,255,0.08);">
+    </div>
+
+    <form id="signupForm">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-control" type="text" name="name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+    </form>
+
+    <p style="text-align:center;margin-top:14px;" class="text-muted">
+      Already have an account? <a href="#" id="toggleLogin" style="color:var(--neon-green);">Log in</a>
+    </p>
+  </div>
+
+  <!-- OTP verification card -->
+  <div class="app-card hide" id="otpCard">
+    <h3>Verify Your Email</h3>
+    <p class="text-muted" id="otpMessage">We sent a 6-digit code to your email.</p>
+    <div class="form-group">
+      <input class="form-control" type="text" inputmode="numeric" maxlength="6" id="otpInput" placeholder="Enter 6-digit code">
+    </div>
+    <p class="text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-circle-info"></i> Didn't receive it? Check your Spam / Junk folder, or wait 60s to resend.</p>
+    <button class="btn btn-primary btn-block" id="verifyOtpBtn">Verify & Continue</button>
+    <button class="btn btn-outline btn-block" id="resendOtpBtn" style="margin-top:8px;" disabled>Resend Code (60s)</button>
+  </div>
+</main>
+
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  let isLoginMode = false;
+  let pendingEmail = null;
+
+  document.getElementById('toggleLogin').addEventListener('click', (e) => {
+    e.preventDefault();
+    isLoginMode = !isLoginMode;
+    document.querySelector('#signupForm button[type=submit]').textContent = isLoginMode ? 'Log In' : 'Sign Up';
+    document.querySelector('#signupForm [name=name]').closest('.form-group').classList.toggle('hide', isLoginMode);
+    e.target.textContent = isLoginMode ? 'Sign up' : 'Log in';
+    e.target.previousSibling.textContent = isLoginMode ? "Don't have an account? " : "Already have an account? ";
+  });
+
+  function redirectAfterAuth() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = params.get('next') || '/index.html';
+  }
+
+  document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!NetworkGuard.requireOnline()) return;
+    const payload = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      if (isLoginMode) {
+        const res = await Api.login({ email: payload.email, password: payload.password });
+        Auth.setSession(res.token, res.user);
+        redirectAfterAuth();
+      } else {
+        await Api.signUp(payload);
+        pendingEmail = payload.email;
+        document.getElementById('otpMessage').textContent = `We sent a 6-digit code to ${payload.email}.`;
+        document.getElementById('authCard').classList.add('hide');
+        document.getElementById('otpCard').classList.remove('hide');
+        startResendTimer();
+      }
+    } catch (err) {
+      UI.showModal('Could Not Continue', err.message || 'Please check your details and try again.');
+    }
+  });
+
+  document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+    const code = document.getElementById('otpInput').value.trim();
+    if (code.length !== 6) { UI.showToast('Enter the 6-digit code.', 'warning'); return; }
+    try {
+      const res = await Api.verifyOtp({ email: pendingEmail, code });
+      Auth.setSession(res.token, res.user);
+      UI.showToast('Account verified.', 'success');
+      redirectAfterAuth();
+    } catch (err) {
+      UI.showModal('Verification Failed', err.message || 'That code is not valid.');
+    }
+  });
+
+  function startResendTimer() {
+    let seconds = 60;
+    const btn = document.getElementById('resendOtpBtn');
+    btn.disabled = true;
+    const interval = setInterval(() => {
+      seconds--;
+      btn.textContent = `Resend Code (${seconds}s)`;
+      if (seconds <= 0) {
+        clearInterval(interval);
+        btn.disabled = false;
+        btn.textContent = 'Resend Code';
+      }
+    }, 1000);
+  }
+
+  document.getElementById('resendOtpBtn').addEventListener('click', async () => {
+    try { await Api.resendOtp(pendingEmail); UI.showToast('Code resent.', 'success'); startResendTimer(); }
+    catch (err) { UI.showToast(err.message || 'Could not resend code.', 'error'); }
+  });
+
+  // NOTE: Google/Apple buttons trigger the provider SDK on the frontend and
+  // send the returned idToken to Api.googleLogin() — provider SDK wiring is
+  // environment-specific (Client ID) and left for the deploying developer.
+  document.getElementById('googleBtn').addEventListener('click', () => {
+    UI.showModal('Google Sign-In', 'Connect your Google OAuth Client ID in js/auth.js to enable this button.');
+  });
+  document.getElementById('appleBtn').addEventListener('click', () => {
+    UI.showModal('Apple Sign-In', 'Connect your Sign in with Apple credentials to enable this button.');
+  });
+</script>
+</body>
+</html>
+
