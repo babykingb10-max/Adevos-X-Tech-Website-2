@@ -129,9 +129,13 @@ const UI = {
   renderFloatingWidgets() {
     const el = document.getElementById('app-overlay');
     if (!el) return;
+    const isAdminPage = window.location.pathname.startsWith('/admin');
+
     el.innerHTML += `
+      ${isAdminPage ? '' : `
       <button class="floating-assistant" id="assistantBtn" aria-label="Adevos AI Assistant"><i class="fa-solid fa-robot"></i></button>
       <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top"><i class="fa-solid fa-arrow-up"></i></button>
+      `}
       <div class="cyber-modal-overlay" id="cyberModal">
         <div class="cyber-modal-card">
           <div class="cyber-modal-header">
