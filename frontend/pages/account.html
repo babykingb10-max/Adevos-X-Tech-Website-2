@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="../js/theme.js"></script>
 <title>My Account | Adevos-X Tech</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -57,9 +58,39 @@
       </div>
       <button class="btn btn-danger btn-block" style="margin-top:14px;" onclick="Auth.logout()">Logout</button>
     `;
+    renderThemeSettings();
+  }
+
+  function renderThemeSettings() {
+    const wrap = document.createElement('div');
+    wrap.className = 'app-card';
+    wrap.style.marginTop = '14px';
+    wrap.id = 'settings';
+    const current = Theme.getPreference();
+    wrap.innerHTML = `
+      <h3>Appearance</h3>
+      <p class="text-muted">Choose how Adevos-X Tech looks on this device.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="themePref" value="system" ${current === 'system' ? 'checked' : ''}>
+          <span>Follow system theme</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="themePref" value="light" ${current === 'light' ? 'checked' : ''}>
+          <span>Light</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="themePref" value="dark" ${current === 'dark' ? 'checked' : ''}>
+          <span>Dark</span>
+        </label>
+      </div>
+    `;
+    document.getElementById('accountContainer').appendChild(wrap);
+    wrap.querySelectorAll('[name=themePref]').forEach(radio => {
+      radio.addEventListener('change', (e) => Theme.set(e.target.value));
+    });
   }
   document.addEventListener('DOMContentLoaded', load);
 </script>
 </body>
 </html>
-
