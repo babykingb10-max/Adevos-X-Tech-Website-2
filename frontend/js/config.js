@@ -14,7 +14,7 @@ const API_BASE_URL = window.location.hostname === 'localhost'
 // OAuth 2.0 Client ID (Web application). Add your exact site URL
 // (e.g. https://adevos-x-tech-website.vercel.app) under "Authorized
 // JavaScript origins" — no path, no trailing slash.
-const GOOGLE_CLIENT_ID = 'REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '191274339655-1pfade8a0c7olsp446be7ujnji543bcl.apps.googleusercontent.com';
 
 const AppConfig = {
   siteSettings: {
