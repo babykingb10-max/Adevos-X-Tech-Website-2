@@ -13,6 +13,9 @@ const Admin = {
       if (window.history.length > 1) window.history.back();
       else window.location.href = '/';
     });
+    const adminBackBtn = document.getElementById('adminBackBtn');
+    const cameFromInternalPage = document.referrer && document.referrer.startsWith(window.location.origin);
+    if (adminBackBtn && !cameFromInternalPage) adminBackBtn.style.display = 'none';
     Admin.showPanel('overview');
   },
 
