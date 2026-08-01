@@ -1,8 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { sendMail, otpEmail } = require('../utils/mailer');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function signToken(user) {
   return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '30d' });
@@ -91,13 +94,48 @@ exports.login = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /auth/google — accepts a Google ID token verified on the client/SDK
+// POST /auth/google — verifies the ID token issued by Google Identity Services
 exports.googleLogin = async (req, res, next) => {
   try {
-    // In production: verify req.body.idToken with google-auth-library here
-    // and extract { sub, email, name, picture } from the verified payload.
-    return res.status(501).json({ message: 'Configure GOOGLE_CLIENT_ID and google-auth-library verification to enable this.' });
-  } catch (err) { next(err); }
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ message: 'Missing Google credential.' });
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(501).json({ message: 'GOOGLE_CLIENT_ID is not configured on the server.' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const email = payload.email.toLowerCase();
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        googleId: payload.sub,
+        name: payload.name || email.split('@')[0],
+        email,
+        profilePic: payload.picture || null,
+        emailVerified: true
+      });
+    } else {
+      let changed = false;
+      if (!user.googleId) { user.googleId = payload.sub; changed = true; }
+      if (!user.profilePic && payload.picture) { user.profilePic = payload.picture; changed = true; }
+      if (!user.emailVerified) { user.emailVerified = true; changed = true; }
+      if (changed) await user.save();
+    }
+
+    if (user.status === 'BANNED') return res.status(403).json({ message: 'This account has been suspended.' });
+
+    res.json({ token: signToken(user), user: publicUser(user) });
+  } catch (err) {
+    if (err.message && err.message.includes('Token used too late')) {
+      return res.status(401).json({ message: 'That sign-in attempt expired. Please try again.' });
+    }
+    next(err);
+  }
 };
 
 // GET /auth/me
