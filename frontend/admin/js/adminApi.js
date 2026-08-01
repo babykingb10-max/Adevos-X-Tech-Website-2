@@ -72,4 +72,3 @@ const AdminApi = {
   updateTutorial: (id, body) => AdminApi.request(`/tutorials/${id}`, { method: 'PUT', body }),
   deleteTutorial: (id) => AdminApi.request(`/tutorials/${id}`, { method: 'DELETE' })
 };
-
