@@ -16,7 +16,10 @@
 
 <div class="admin-shell">
   <aside class="admin-sidebar">
-    <div class="admin-logo"><i class="fa-solid fa-user-shield"></i> Adevos Admin</div>
+    <div class="admin-logo" style="display:flex;align-items:center;gap:10px;">
+      <button class="icon-btn" id="adminBackBtn" aria-label="Go back" style="color:var(--admin-green, var(--neon-green));"><i class="fa-solid fa-arrow-left"></i></button>
+      <span><i class="fa-solid fa-user-shield"></i> Adevos Admin</span>
+    </div>
     <nav class="admin-nav" id="adminNav">
       <button data-panel="overview" class="active"><i class="fa-solid fa-chart-line"></i> Overview</button>
       <button data-panel="slides"><i class="fa-solid fa-images"></i> Hero Slides</button>
