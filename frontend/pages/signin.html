@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/css/global.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -142,15 +143,46 @@
     catch (err) { UI.showToast(err.message || 'Could not resend code.', 'error'); }
   });
 
-  // NOTE: Google/Apple buttons trigger the provider SDK on the frontend and
-  // send the returned idToken to Api.googleLogin() — provider SDK wiring is
-  // environment-specific (Client ID) and left for the deploying developer.
-  document.getElementById('googleBtn').addEventListener('click', () => {
-    UI.showModal('Google Sign-In', 'Connect your Google OAuth Client ID in js/auth.js to enable this button.');
-  });
+  // NOTE: Apple Sign-In requires a paid Apple Developer account and a
+  // signed JWT client secret — left as a placeholder until that's set up.
   document.getElementById('appleBtn').addEventListener('click', () => {
     UI.showModal('Apple Sign-In', 'Connect your Sign in with Apple credentials to enable this button.');
   });
+
+  // ---- Google Sign-In (Google Identity Services) ----
+  async function handleGoogleCredential(response) {
+    if (!NetworkGuard.requireOnline()) return;
+    try {
+      const res = await Api.googleLogin(response.credential);
+      Auth.setSession(res.token, res.user);
+      UI.showToast('Signed in with Google.', 'success');
+      redirectAfterAuth();
+    } catch (err) {
+      UI.showModal('Google Sign-In Failed', err.message || 'Could not sign in with Google. Try again.');
+    }
+  }
+
+  function initGoogleSignIn() {
+    if (typeof google === 'undefined' || !google.accounts) {
+      // Google's script hasn't loaded yet — retry shortly.
+      setTimeout(initGoogleSignIn, 300);
+      return;
+    }
+    if (GOOGLE_CLIENT_ID.startsWith('REPLACE_WITH')) {
+      document.getElementById('googleBtn').addEventListener('click', () => {
+        UI.showModal('Google Sign-In Not Configured', 'Set GOOGLE_CLIENT_ID in frontend/js/config.js and GOOGLE_CLIENT_ID on the backend to enable this.');
+      });
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential
+    });
+    document.getElementById('googleBtn').addEventListener('click', () => {
+      google.accounts.id.prompt(); // shows the Google One Tap / account chooser
+    });
+  }
+  initGoogleSignIn();
 </script>
 </body>
 </html>
