@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="../js/theme.js"></script>
+<title>Available Bots | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1>Available Bots</h1>
+  <p class="text-muted">Choose a bot template to deploy.</p>
+</div>
+
+<main class="container" id="botsContainer">
+  <div class="empty-state"><div class="icon"><i class="fa-solid fa-spinner fa-spin"></i></div><p>Loading available bots...</p></div>
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/actionEngine.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  async function loadBots() {
+    if (!Auth.requireLogin()) return;
+    const container = document.getElementById('botsContainer');
+    try {
+      const status = await Api.getDeploymentStatus();
+
+      if (status.state === 'PAYMENT_REQUIRED') {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon"><i class="fa-solid fa-lock"></i></div>
+            <h3>Payment Required</h3>
+            <p>Choose a plan and pay to unlock bot deployment.</p>
+            <a href="/pages/payment.html" class="btn btn-primary" style="margin-top:14px;">View Plans</a>
+          </div>`;
+        return;
+      }
+
+      if (status.state === 'ALREADY_DEPLOYED') {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h3>You Already Have a Bot Deployed</h3>
+            <p>User plan allows one active bot. Manage it instead of deploying a new one.</p>
+            <a href="/pages/manage.html" class="btn btn-primary" style="margin-top:14px;">Go to Bot Management</a>
+          </div>`;
+        return;
+      }
+
+      const bots = await Api.getAvailableBots();
+      const isDeployer = status.plan === 'DEPLOYER';
+
+      container.innerHTML = `
+        <div class="cards-grid cols-3-desktop">
+          ${bots.map(bot => `
+            <div class="app-card">
+              <img src="${bot.imageUrl}" alt="${bot.name}" style="border-radius:10px;height:150px;object-fit:cover;">
+              <h3>${bot.name}</h3>
+              <p class="text-muted">${bot.description}</p>
+              <button class="btn btn-primary btn-block" onclick="startDeploy('${bot._id}')">Deploy</button>
+              <a class="btn btn-outline btn-block" href="${bot.sourceCodeUrl}" target="_blank" rel="noopener">Source Code</a>
+            </div>
+          `).join('')}
+        </div>
+        ${!isDeployer ? `
+        <div class="app-card" style="margin-top:20px;border-color:var(--neon-green);">
+          <h3><i class="fa-solid fa-crown"></i> Want Access to More Bots?</h3>
+          <p class="text-muted">Upgrade to a Deployer Account to unlock the full bot library.</p>
+          <a href="/pages/payment.html?plan=deployer" class="btn btn-primary">Upgrade to Deployer</a>
+        </div>` : ''}
+      `;
+    } catch (err) {
+      container.innerHTML = `<div class="empty-state"><p>${err.message || 'Could not load bots.'}</p></div>`;
+    }
+  }
+
+  function startDeploy(botId) {
+    if (!NetworkGuard.requireOnline()) return;
+    window.location.href = `/pages/deployment.html?botId=${botId}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', loadBots);
+</script>
+</body>
+</html>
