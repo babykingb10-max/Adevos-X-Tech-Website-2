@@ -9,6 +9,10 @@ const Admin = {
       btn.addEventListener('click', () => Admin.showPanel(btn.dataset.panel));
     });
     document.getElementById('logoutBtn').addEventListener('click', AdminAuth.logout);
+    document.getElementById('adminBackBtn')?.addEventListener('click', () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = '/';
+    });
     Admin.showPanel('overview');
   },
 
@@ -462,4 +466,3 @@ const Admin = {
 };
 
 document.addEventListener('DOMContentLoaded', () => Admin.init());
-
