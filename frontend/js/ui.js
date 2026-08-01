@@ -22,8 +22,11 @@ const UI = {
     const user = Auth.getUser();
     el.innerHTML = `
       <header class="top-header">
-        <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-        <a href="/index.html" class="brand-title" style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:2px;">
+          <button class="icon-btn" id="backBtn" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></button>
+          <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+        </div>
+        <a href="/" class="brand-title" style="display:flex;align-items:center;gap:8px;">
           <img src="/assets/logo.png" alt="" style="width:28px;height:28px;border-radius:50%;">
           <span>${AppConfig.siteSettings.siteName}</span>
         </a>
@@ -179,6 +182,14 @@ const UI = {
   // ---------- Wiring ----------
   wireGlobalEvents() {
     document.getElementById('hamburgerBtn')?.addEventListener('click', () => UI.openSidebar());
+    document.getElementById('backBtn')?.addEventListener('click', () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = '/';
+    });
+    if (window.location.pathname === '/') {
+      const backBtn = document.getElementById('backBtn');
+      if (backBtn) backBtn.style.visibility = 'hidden';
+    }
     document.getElementById('closeSidebarBtn')?.addEventListener('click', () => UI.closeSidebar());
     document.getElementById('sidebarOverlay')?.addEventListener('click', () => UI.closeSidebar());
     document.getElementById('avatarBtn')?.addEventListener('click', () => document.getElementById('profileMenu').classList.add('active'));
@@ -230,4 +241,3 @@ const UI = {
 };
 
 document.addEventListener('DOMContentLoaded', () => UI.init());
-
