@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy Your Bot | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<style>
+  .build-box { background: #030503; border: var(--border-neon); border-radius: var(--radius-md); padding: 12px; font-family: monospace; font-size: 0.82rem; color: var(--neon-green); max-height: 220px; overflow-y: auto; display: none; }
+  .build-box.show { display: block; }
+  .build-line { opacity: 0; animation: lineIn 0.25s ease forwards; }
+  @keyframes lineIn { to { opacity: 1; } }
+  .audio-widget { display: flex; align-items: center; gap: 10px; }
+</style>
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1>Deploy Your Bot</h1>
+  <p class="text-muted">Choose a platform, pair your number, and start deployment.</p>
+</div>
+
+<main class="container" style="max-width:640px;">
+
+  <div class="app-card" id="audioCard" style="display:none;margin-bottom:18px;">
+    <div class="audio-widget">
+      <button class="icon-btn" id="audioToggle"><i class="fa-solid fa-play"></i></button>
+      <div style="flex:1;">
+        <p class="text-bold" id="trackTitle">Deployment Music</p>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50" style="width:100%;">
+      </div>
+    </div>
+    <audio id="deployAudio" loop></audio>
+  </div>
+
+  <div class="app-card" style="margin-bottom:18px;">
+    <h3>1. Choose Deployment Platform</h3>
+    <div id="platformList" class="cards-grid" style="margin-top:10px;">
+      <p class="text-muted">Loading platforms...</p>
+    </div>
+  </div>
+
+  <div class="app-card" style="margin-bottom:18px;">
+    <h3>2. Pair Your WhatsApp Number</h3>
+    <p class="text-muted">Open the pairing site, connect your number, then copy the Session ID it gives you.</p>
+    <div id="pairSitesList" style="display:flex;flex-direction:column;gap:8px;margin:10px 0;"></div>
+    <div class="form-group">
+      <label class="form-label">Session ID</label>
+      <textarea class="form-control" id="sessionIdInput" rows="3" placeholder="Paste your Session ID here"></textarea>
+    </div>
+  </div>
+
+  <div class="app-card" style="margin-bottom:18px;">
+    <h3>3. Bot Details</h3>
+    <div class="form-group">
+      <label class="form-label">Bot Name</label>
+      <input class="form-control" id="botNameInput" placeholder="My WhatsApp Bot">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prefix</label>
+      <input class="form-control" id="prefixInput" value=".">
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-block" id="deployBtn">Start Deployment</button>
+  <button class="btn btn-outline btn-block" id="toggleBuildBoxBtn" style="margin-top:10px;">Show Build Box</button>
+
+  <div class="build-box" id="buildBox"></div>
+
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const botId = urlParams.get('botId');
+  let selectedPlatform = null;
+
+  async function init() {
+    if (!Auth.requireLogin()) return;
+    loadPlatforms();
+    loadAudio();
+  }
+
+  async function loadPlatforms() {
+    const list = document.getElementById('platformList');
+    try {
+      const platforms = await Api.getDeploymentPlatforms();
+      list.innerHTML = platforms.map(p => `
+        <label class="app-card" style="flex-direction:row;align-items:center;gap:10px;cursor:${p.available ? 'pointer' : 'not-allowed'};opacity:${p.available ? '1' : '0.5'};">
+          <input type="radio" name="platform" value="${p.name}" ${p.available ? '' : 'disabled'} ${p.recommended ? 'checked' : ''}>
+          <div>
+            <strong>${p.name}${p.recommended ? ' — Recommended' : ''}</strong>
+            <p class="text-muted" style="margin:0;">${p.statusMessage}</p>
+          </div>
+        </label>
+      `).join('');
+      const checked = list.querySelector('input[name=platform]:checked');
+      if (checked) selectedPlatform = checked.value;
+      list.querySelectorAll('input[name=platform]').forEach(r => r.addEventListener('change', () => selectedPlatform = r.value));
+    } catch (err) {
+      list.innerHTML = `<p class="text-muted">Could not load platforms: ${err.message}</p>`;
+    }
+  }
+
+  async function loadAudio() {
+    if (!AppConfig.siteSettings.bgMusicEnabled) return;
+    const card = document.getElementById('audioCard');
+    card.style.display = '';
+    const audio = document.getElementById('deployAudio');
+    audio.volume = 0.5;
+    document.getElementById('audioToggle').addEventListener('click', () => {
+      if (audio.paused) { audio.play().catch(() => {}); document.getElementById('audioToggle').innerHTML = '<i class="fa-solid fa-pause"></i>'; }
+      else { audio.pause(); document.getElementById('audioToggle').innerHTML = '<i class="fa-solid fa-play"></i>'; }
+    });
+    document.getElementById('volumeSlider').addEventListener('input', (e) => audio.volume = e.target.value / 100);
+  }
+
+  document.getElementById('toggleBuildBoxBtn').addEventListener('click', (e) => {
+    const box = document.getElementById('buildBox');
+    box.classList.toggle('show');
+    e.target.textContent = box.classList.contains('show') ? 'Hide Build Box' : 'Show Build Box';
+  });
+
+  function logLine(text) {
+    const box = document.getElementById('buildBox');
+    const line = document.createElement('div');
+    line.className = 'build-line';
+    line.textContent = `> ${text}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById('deployBtn').addEventListener('click', async () => {
+    if (!NetworkGuard.requireOnline()) return;
+    const sessionId = document.getElementById('sessionIdInput').value.trim();
+    const botName = document.getElementById('botNameInput').value.trim() || 'My Bot';
+    const prefix = document.getElementById('prefixInput').value.trim() || '.';
+
+    if (!selectedPlatform) { UI.showToast('Select a deployment platform.', 'warning'); return; }
+    if (!sessionId) { UI.showToast('Paste your Session ID first.', 'warning'); return; }
+
+    const btn = document.getElementById('deployBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deploying...';
+    document.getElementById('buildBox').classList.add('show');
+    logLine('Checking environment...');
+
+    try {
+      const res = await Api.deployBot({ botId, platform: selectedPlatform, sessionId, botName, prefix });
+      logLine('Uploading configuration...');
+      logLine(`Connecting to ${selectedPlatform}...`);
+      logLine('Deployment successful.');
+      UI.showModal('Deployment Started', 'Your bot is building now. You can track its status on the Bot Management page.', {
+        confirmText: 'Go to Bot Management',
+        onConfirm: () => window.location.href = '/pages/manage.html'
+      });
+    } catch (err) {
+      logLine(`ERROR: ${err.message}`);
+      UI.showModal('Deployment Failed', err.message || 'Something went wrong. You can report this from the Feedback page.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Start Deployment';
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+
