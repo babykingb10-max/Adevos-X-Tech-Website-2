@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorials | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1>Tutorials</h1>
+  <p class="text-muted">Learn how to deploy, pair, and manage your bots with short guided videos.</p>
+</div>
+
+<main class="container">
+  <div class="chip-row" id="filterChips"></div>
+  <div class="cards-grid" id="tutorialsGrid">
+    <p class="text-muted">Loading tutorials...</p>
+  </div>
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  let allTutorials = [];
+  let activeCategory = 'All';
+
+  async function load() {
+    try {
+      allTutorials = await Api.getTutorials();
+    } catch {
+      allTutorials = [];
+    }
+    renderChips();
+    renderGrid();
+  }
+
+  function renderChips() {
+    const categories = ['All', ...new Set(allTutorials.map(t => t.category))];
+    document.getElementById('filterChips').innerHTML = categories.map(c => `
+      <button class="chip ${c === activeCategory ? 'active' : ''}" data-cat="${c}">${c}</button>
+    `).join('');
+    document.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => { activeCategory = btn.dataset.cat; renderChips(); renderGrid(); });
+    });
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('tutorialsGrid');
+    const list = activeCategory === 'All' ? allTutorials : allTutorials.filter(t => t.category === activeCategory);
+    if (!list.length) { grid.innerHTML = `<div class="empty-state"><p>No tutorials in this category yet.</p></div>`; return; }
+    grid.innerHTML = list.map(t => `
+      <div class="app-card">
+        <img src="${t.thumbnail}" alt="${t.title}" style="border-radius:8px;">
+        <span class="text-muted" style="font-size:0.8rem;"><i class="fa-regular fa-clock"></i> ${t.duration}</span>
+        <h3>${t.title}</h3>
+        <button class="btn btn-primary btn-block" onclick="playTutorial('${t._id}')"><i class="fa-solid fa-play"></i> Watch Video</button>
+      </div>
+    `).join('');
+  }
+
+  function playTutorial(id) {
+    const t = allTutorials.find(x => x._id === id);
+    if (!t) return;
+    UI.showModal(t.title, '');
+    document.getElementById('modalMessage').innerHTML = `
+      <div style="aspect-ratio:16/9;margin-bottom:10px;">
+        <iframe src="${t.videoUrl}" style="width:100%;height:100%;border:0;border-radius:8px;" allowfullscreen></iframe>
+      </div>
+      ${(t.writtenSteps || []).map(s => `<p>${s}</p>`).join('')}
+    `;
+  }
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
+
