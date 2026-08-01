@@ -10,6 +10,12 @@ const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:5000/api/v1'
   : 'https://adevos-x-tech-website-e3dd767aec0e.herokuapp.com/api/v1';
 
+// Get this from Google Cloud Console → APIs & Services → Credentials →
+// OAuth 2.0 Client ID (Web application). Add your exact site URL
+// (e.g. https://adevos-x-tech-website.vercel.app) under "Authorized
+// JavaScript origins" — no path, no trailing slash.
+const GOOGLE_CLIENT_ID = 'REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
 const AppConfig = {
   siteSettings: {
     siteName: 'Adevos-X Tech',
