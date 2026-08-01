@@ -84,7 +84,7 @@
 
   function redirectAfterAuth() {
     const params = new URLSearchParams(window.location.search);
-    window.location.href = params.get('next') || '/index.html';
+    window.location.href = params.get('next') || '/';
   }
 
   document.getElementById('signupForm').addEventListener('submit', async (e) => {
