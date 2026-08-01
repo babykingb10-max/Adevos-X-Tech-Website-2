@@ -9,6 +9,7 @@ const Tutorial = require('./models/Tutorial');
 const Update = require('./models/Update');
 
 async function runSeed() {
+  await dropLegacyIndexes();
   await seedSiteConfig();
   await seedSlides();
   await seedCards();
@@ -17,6 +18,22 @@ async function runSeed() {
   await seedTutorials();
   await seedUpdates();
   await seedAdmin();
+}
+
+// Cleans up indexes from earlier schema versions that no longer match the
+// current model (e.g. the removed unique referralCode index on User, which
+// caused E11000 duplicate key errors once more than one user had no code).
+async function dropLegacyIndexes() {
+  try {
+    const indexes = await User.collection.indexes();
+    const legacy = indexes.find(idx => idx.name === 'referralCode_1');
+    if (legacy) {
+      await User.collection.dropIndex('referralCode_1');
+      console.log('[seed] Dropped legacy referralCode_1 index on users collection.');
+    }
+  } catch (err) {
+    console.log('[seed] Legacy index cleanup skipped:', err.message);
+  }
 }
 
 async function seedSiteConfig() {
