@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1 id="paymentTitle">Payment</h1>
+  <p class="text-muted" id="paymentSubtitle">Choose a subscription and payment method.</p>
+</div>
+
+<main class="container" style="max-width:640px;">
+
+  <div class="app-card" style="margin-bottom:18px;">
+    <h3>Subscription Length</h3>
+    <div class="form-group">
+      <select class="form-control" id="subscriptionSelect"></select>
+    </div>
+    <div class="flex-between"><span class="text-muted">Total</span><strong class="text-bold" id="totalAmount">—</strong></div>
+  </div>
+
+  <div class="app-card" id="giftCard" style="display:none;margin-bottom:18px;">
+    <div class="flex-between">
+      <div>
+        <h3><i class="fa-solid fa-gift"></i> Get a Free Bot</h3>
+        <p class="text-muted">No payment needed — deploy a starter bot instantly.</p>
+      </div>
+      <a class="btn btn-outline" id="freeBotLink" href="#" target="_blank" rel="noopener">Get Free Bot</a>
+    </div>
+  </div>
+
+  <div class="app-card" id="coinsCard" style="display:none;margin-bottom:18px;">
+    <h3><i class="fa-solid fa-coins"></i> Pay With AV Coins</h3>
+    <div class="flex-between">
+      <span class="text-muted">Your balance</span><strong id="coinsBalance">—</strong>
+    </div>
+    <div class="flex-between">
+      <span class="text-muted">Required</span><strong id="coinsRequired">—</strong>
+    </div>
+    <button class="btn btn-primary btn-block" id="payWithCoinsBtn" style="margin-top:10px;">Pay With Coins</button>
+    <a class="btn btn-outline btn-block hide" id="visitCoinsBtn" href="/pages/av-coins.html" style="margin-top:10px;">Visit Your AV Coins</a>
+  </div>
+
+  <div class="app-card" id="manualCard" style="margin-bottom:18px;">
+    <h3><i class="fa-solid fa-money-bill-wave"></i> Manual Mobile Money</h3>
+    <p class="text-muted" id="manualInstructions">Loading payment instructions...</p>
+    <div class="form-group">
+      <label class="form-label">Transaction Reference Code</label>
+      <input class="form-control" id="txnRef" placeholder="e.g. TXN00123456">
+    </div>
+    <button class="btn btn-primary btn-block" id="submitManualBtn">I Have Paid — Submit</button>
+  </div>
+
+  <div class="app-card" id="paystackCard" style="margin-bottom:18px;">
+    <h3><i class="fa-solid fa-credit-card"></i> Card Payment (Paystack)</h3>
+    <p class="text-muted">Pay securely by card.</p>
+    <button class="btn btn-primary btn-block" id="paystackBtn">Pay With Card</button>
+  </div>
+
+  <div class="app-card" id="waitingCard" style="display:none;text-align:center;">
+    <i class="fa-solid fa-circle-notch fa-spin" style="font-size:1.6rem;color:var(--neon-green);"></i>
+    <p style="margin-top:10px;">Waiting for payment confirmation...</p>
+  </div>
+
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const isDeployerUpgrade = params.get('plan') === 'deployer';
+  let currentPaymentId = null;
+  let pollTimer = null;
+
+  const PLAN_PRICES = {
+    'Wiki 2': 10000, 'Wiki 4': 19000, 'Wiki 6': 27000, 'Wiki 8': 34000
+  };
+
+  async function init() {
+    if (!Auth.requireLogin()) return;
+
+    document.getElementById('paymentTitle').textContent = isDeployerUpgrade ? 'Upgrade to Deployer Plan' : 'Complete Payment';
+    document.getElementById('paymentSubtitle').textContent = isDeployerUpgrade
+      ? 'Official payment only — coins and free bot are not available for this upgrade.'
+      : 'Pick a subscription length and a payment method to unlock deployment.';
+
+    const select = document.getElementById('subscriptionSelect');
+    select.innerHTML = Object.keys(PLAN_PRICES).map(p => `<option value="${p}">${p} — TZS ${PLAN_PRICES[p].toLocaleString()}</option>`).join('');
+    select.addEventListener('change', updateTotal);
+    updateTotal();
+
+    let methods;
+    try { methods = await Api.getPaymentMethods(); }
+    catch { methods = { manualEnabled: true, paystackEnabled: true, coinsEnabled: true, freeBotEnabled: true, manualInstructions: 'Pay via M-Pesa: 07XXXXXXXX (Adevos-X Tech)', freeBotUrl: AppConfig.siteSettings.freeBotUrl }; }
+
+    document.getElementById('manualInstructions').textContent = methods.manualInstructions;
+    document.getElementById('manualCard').style.display = methods.manualEnabled ? '' : 'none';
+    document.getElementById('paystackCard').style.display = methods.paystackEnabled ? '' : 'none';
+
+    if (!isDeployerUpgrade) {
+      if (methods.coinsEnabled) {
+        document.getElementById('coinsCard').style.display = '';
+        loadCoinsBalance();
+      }
+      if (methods.freeBotEnabled) {
+        document.getElementById('giftCard').style.display = '';
+        document.getElementById('freeBotLink').href = methods.freeBotUrl;
+      }
+    }
+  }
+
+  function updateTotal() {
+    const plan = document.getElementById('subscriptionSelect').value;
+    document.getElementById('totalAmount').textContent = `TZS ${PLAN_PRICES[plan].toLocaleString()}`;
+    document.getElementById('coinsRequired').textContent = `${PLAN_PRICES[plan] / 100} Coins`;
+  }
+
+  async function loadCoinsBalance() {
+    try {
+      const wallet = await Api.getCoinsWallet();
+      document.getElementById('coinsBalance').textContent = `${wallet.balance} Coins`;
+      const plan = document.getElementById('subscriptionSelect').value;
+      const required = PLAN_PRICES[plan] / 100;
+      const canAfford = wallet.balance >= required;
+      document.getElementById('payWithCoinsBtn').classList.toggle('hide', !canAfford);
+      document.getElementById('visitCoinsBtn').classList.toggle('hide', canAfford);
+    } catch { /* not fatal */ }
+  }
+
+  async function submitPayment(method, extra = {}) {
+    if (!NetworkGuard.requireOnline()) return;
+    const plan = document.getElementById('subscriptionSelect').value;
+    try {
+      const res = await Api.initiatePayment({
+        context: isDeployerUpgrade ? 'DEPLOYER_UPGRADE' : 'BOT_DEPLOYMENT',
+        plan, method, amount: PLAN_PRICES[plan], ...extra
+      });
+      currentPaymentId = res.paymentId;
+      document.getElementById('waitingCard').style.display = '';
+      pollPaymentStatus();
+    } catch (err) {
+      UI.showModal('Payment Error', err.message || 'Could not start payment.');
+    }
+  }
+
+  function pollPaymentStatus() {
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await Api.getPaymentStatus(currentPaymentId);
+        if (res.status === 'ACTIVE') {
+          clearInterval(pollTimer);
+          UI.showModal('Payment Successful', 'You can now deploy your bot.', {
+            confirmText: 'Now You Can Deploy',
+            onConfirm: () => window.location.href = isDeployerUpgrade ? '/index.html' : '/pages/available-bots.html'
+          });
+        }
+      } catch { /* keep polling */ }
+    }, 2500);
+  }
+
+  document.getElementById('submitManualBtn').addEventListener('click', () => {
+    const ref = document.getElementById('txnRef').value.trim();
+    if (!ref) { UI.showToast('Enter your transaction reference code.', 'warning'); return; }
+    submitPayment('MANUAL', { transactionRef: ref });
+  });
+
+  document.getElementById('paystackBtn').addEventListener('click', () => submitPayment('PAYSTACK'));
+  document.getElementById('payWithCoinsBtn').addEventListener('click', () => submitPayment('COINS'));
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+
