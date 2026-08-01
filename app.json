@@ -11,7 +11,7 @@
   "env": {
     "APP_BASE": { "value": "backend", "description": "Tells the monorepo buildpack to build only the backend/ folder" },
     "NODE_ENV": { "value": "production" },
-    "FRONTEND_URL": { "description": "Your deployed Vercel frontend URL", "value": "https://www.adevosxtech.site" },
+    "FRONTEND_URL": { "description": "Your deployed Vercel frontend URL", "value": "https://adevos-x-tech-website.vercel.app" },
     "MONGODB_URI": { "description": "MongoDB Atlas connection string" },
     "JWT_SECRET": { "description": "Long random string used to sign login sessions", "generator": "secret" },
     "JWT_EXPIRES_IN": { "value": "30d" },
