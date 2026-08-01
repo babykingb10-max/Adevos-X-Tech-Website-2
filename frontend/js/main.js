@@ -75,13 +75,13 @@ const Home = {
     const el = document.getElementById('getInTouchGrid');
     if (!el) return;
     el.innerHTML = cards.map((c, i) => `
-      <div class="app-card" id="${c.title === 'Send Your Feedback' ? 'feedback-card' : (c.title === 'Meet a Developer' ? 'developer-card' : '')}">
+      <div class="app-card get-in-touch-card" id="${c.title === 'Send Your Feedback' ? 'feedback-card' : (c.title === 'Meet a Developer' ? 'developer-card' : '')}">
         <i class="${c.icon || c.iconClass} card-icon"></i>
         <h3>${c.title}</h3>
         <p class="text-muted">${c.description}</p>
         ${c.target
-          ? `<a href="${c.target}" class="btn btn-primary btn-block">${c.btnText}</a>`
-          : `<button class="btn btn-primary btn-block" data-action-type="${c.action}">${c.btnText}</button>`
+          ? `<a href="${c.target}" class="btn btn-primary btn-sm">${c.btnText}</a>`
+          : `<button class="btn btn-primary btn-sm" data-action-type="${c.action}">${c.btnText}</button>`
         }
         ${c.action === 'OPEN_TUTORIALS_DROPDOWN' ? this.tutorialsDropdownMarkup() : ''}
         ${c.action === 'OPEN_FEEDBACK_FORM' ? this.feedbackFormMarkup() : ''}
@@ -152,4 +152,3 @@ const Home = {
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('heroSlider')) Home.init();
 });
-
