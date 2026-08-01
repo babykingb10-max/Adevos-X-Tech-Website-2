@@ -1,0 +1,34 @@
+{
+  "name": "Adevos-X Tech Backend",
+  "description": "API for Adevos-X Tech — auth, bot deployment, payments, AV Coins, admin control.",
+  "repository": "https://github.com/babykingb10-max/Adevos-X-Tech-Website-2",
+  "keywords": ["node", "express", "mongodb", "whatsapp-bot", "adevos-x-tech"],
+  "stack": "heroku-22",
+  "buildpacks": [
+    { "url": "https://github.com/lstoll/heroku-buildpack-monorepo" },
+    { "url": "heroku/nodejs" }
+  ],
+  "env": {
+    "APP_BASE": { "value": "backend", "description": "Tells the monorepo buildpack to build only the backend/ folder" },
+    "NODE_ENV": { "value": "production" },
+    "FRONTEND_URL": { "description": "Your deployed Vercel frontend URL", "value": "https://www.adevosxtech.site" },
+    "MONGODB_URI": { "description": "MongoDB Atlas connection string" },
+    "JWT_SECRET": { "description": "Long random string used to sign login sessions", "generator": "secret" },
+    "JWT_EXPIRES_IN": { "value": "30d" },
+    "GOOGLE_CLIENT_ID": { "description": "Google OAuth Client ID (optional at first)", "required": false },
+    "APPLE_CLIENT_ID": { "description": "Apple Sign-In Client ID (optional at first)", "required": false },
+    "RESEND_API_KEY": { "description": "Resend API key for OTP/notification emails", "required": false },
+    "EMAIL_FROM": { "value": "Adevos-X Tech <no-reply@adevosxtech.site>" },
+    "ADMIN_NOTIFY_EMAIL": { "description": "Where new feedback notifications are sent", "required": false },
+    "KOYEB_API_KEY": { "description": "Koyeb API key for bot deployment", "required": false },
+    "RENDER_API_KEY": { "description": "Render API key for bot deployment", "required": false },
+    "PAYSTACK_SECRET_KEY": { "description": "Paystack secret key for card payments", "required": false },
+    "MANUAL_PAYMENT_INSTRUCTIONS": { "value": "Pay via M-Pesa: 07XXXXXXXX (Adevos-X Tech)" },
+    "ADMIN_DEFAULT_USERNAME": { "value": "admin" },
+    "ADMIN_DEFAULT_PASSWORD": { "description": "Change this immediately after first login", "generator": "secret" }
+  },
+  "formation": {
+    "web": { "quantity": 1, "size": "eco" }
+  }
+}
+
