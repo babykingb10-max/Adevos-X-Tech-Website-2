@@ -44,7 +44,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       localStorage.setItem('adevos_admin_token', data.token);
-      window.location.href = '/admin/index.html';
+      window.location.href = '/admin/';
     } catch (err) {
       UI.showModal('Login Failed', err.message || 'Check your credentials and try again.');
     }
