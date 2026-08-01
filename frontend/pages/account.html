@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header"><h1>My Account</h1></div>
+
+<main class="container" style="max-width:520px;" id="accountContainer"></main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  async function load() {
+    if (!Auth.requireLogin()) return;
+    const user = Auth.getUser();
+    const container = document.getElementById('accountContainer');
+    container.innerHTML = `
+      <div class="app-card">
+        <h3>${user.name}</h3>
+        <p class="text-muted">${user.email}</p>
+        <div class="flex-between" style="margin-top:10px;">
+          <span class="text-muted">Plan</span>
+          <span class="badge">${user.subscription?.plan || 'USER'}</span>
+        </div>
+        <div class="flex-between">
+          <span class="text-muted">Status</span>
+          <span class="badge">${user.subscription?.status || 'INACTIVE'}</span>
+        </div>
+        ${user.subscription?.expiresAt ? `
+        <div class="flex-between">
+          <span class="text-muted">Renews</span>
+          <span>${new Date(user.subscription.expiresAt).toLocaleDateString()}</span>
+        </div>` : ''}
+        ${user.subscription?.plan !== 'DEPLOYER' ? `
+          <a href="/pages/payment.html?plan=deployer" class="btn btn-primary btn-block" style="margin-top:14px;">Upgrade to Deployer</a>
+        ` : `
+          <a href="/pages/payment.html" class="btn btn-outline btn-block" style="margin-top:14px;">Renew Subscription</a>
+        `}
+      </div>
+      <button class="btn btn-danger btn-block" style="margin-top:14px;" onclick="Auth.logout()">Logout</button>
+    `;
+  }
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
+
