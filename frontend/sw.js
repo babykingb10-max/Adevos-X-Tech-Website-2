@@ -5,9 +5,9 @@
    name to clear any broken v1 cache from earlier deploys.
    ========================================================= */
 
-const CACHE_NAME = 'adevos-x-shell-v2';
+const CACHE_NAME = 'adevos-x-shell-v3';
 const APP_SHELL = [
-  '/index.html',
+  '/',
   '/css/global.css',
   '/css/components.css',
   '/css/layout.css',
@@ -62,7 +62,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(async () => {
           if (request.mode === 'navigate') {
-            const fallback = await caches.match('/index.html');
+            const fallback = await caches.match('/');
             if (fallback) return fallback;
           }
           // Always resolve with a real Response — never undefined,
