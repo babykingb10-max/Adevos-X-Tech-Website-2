@@ -4,19 +4,36 @@
 
 const Admin = {
   async init() {
-    if (!AdminAuth.requireLogin()) return;
-    document.querySelectorAll('#adminNav button').forEach(btn => {
-      btn.addEventListener('click', () => Admin.showPanel(btn.dataset.panel));
-    });
-    document.getElementById('logoutBtn').addEventListener('click', AdminAuth.logout);
-    document.getElementById('adminBackBtn')?.addEventListener('click', () => {
-      if (window.history.length > 1) window.history.back();
-      else window.location.href = '/';
-    });
-    const adminBackBtn = document.getElementById('adminBackBtn');
-    const cameFromInternalPage = document.referrer && document.referrer.startsWith(window.location.origin);
-    if (adminBackBtn && !cameFromInternalPage) adminBackBtn.style.display = 'none';
-    Admin.showPanel('overview');
+    try {
+      if (!AdminAuth.requireLogin()) return;
+      document.querySelectorAll('#adminNav button').forEach(btn => {
+        btn.addEventListener('click', () => Admin.showPanel(btn.dataset.panel));
+      });
+      document.getElementById('logoutBtn')?.addEventListener('click', AdminAuth.logout);
+      document.getElementById('adminBackBtn')?.addEventListener('click', () => {
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = '/';
+      });
+      const adminBackBtn = document.getElementById('adminBackBtn');
+      const cameFromInternalPage = document.referrer && document.referrer.startsWith(window.location.origin);
+      if (adminBackBtn && !cameFromInternalPage) adminBackBtn.style.display = 'none';
+      await Admin.showPanel('overview');
+    } catch (err) {
+      Admin.showFatalError('Admin.init() crashed', err);
+    }
+  },
+
+  showFatalError(context, err) {
+    const el = document.getElementById('adminContent');
+    if (el) {
+      el.innerHTML = `
+        <div class="app-card" style="border-color:#ff3b5c;">
+          <h3 style="color:#ff3b5c;">Something went wrong</h3>
+          <p class="text-muted">${context}</p>
+          <pre style="white-space:pre-wrap;color:#ff9b9b;font-size:0.8rem;">${(err && err.message) || String(err)}</pre>
+        </div>`;
+    }
+    console.error(context, err);
   },
 
   showPanel(name) {
@@ -468,4 +485,22 @@ const Admin = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => Admin.init());
+window.addEventListener('error', (e) => Admin.showFatalError('Uncaught script error', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => Admin.showFatalError('Unhandled promise rejection', e.reason));
+
+document.addEventListener('DOMContentLoaded', () => {
+  Admin.init();
+
+  // Watchdog: if the page is still showing the static placeholder after
+  // 10 seconds, something hung silently (e.g. a fetch that never resolves
+  // or rejects) — surface that instead of leaving "Loading..." forever.
+  setTimeout(() => {
+    const el = document.getElementById('adminContent');
+    if (el && el.textContent.trim() === 'Loading...') {
+      Admin.showFatalError(
+        'Timed out waiting for the admin panel to load',
+        new Error(`No response after 10s. Check that ${API_BASE_URL} is reachable and CORS allows this origin (${window.location.origin}).`)
+      );
+    }
+  }, 10000);
+});
