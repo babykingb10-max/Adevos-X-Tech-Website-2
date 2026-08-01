@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Your Bot | Adevos-X Tech</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/css/global.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<style>
+  .logs-box { background: #030503; border: var(--border-neon); border-radius: var(--radius-md); padding: 12px; font-family: monospace; font-size: 0.8rem; color: var(--neon-green); max-height: 220px; overflow-y: auto; display: none; margin-top: 10px; white-space: pre-wrap; }
+  .logs-box.show { display: block; }
+  .bot-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<div id="app-header"></div>
+<div id="app-sidebar"></div>
+
+<div class="page-header">
+  <h1>Bot Management</h1>
+  <p class="text-muted">Monitor and control your deployed bots.</p>
+</div>
+
+<main class="container" id="manageContainer">
+  <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading your bots...</p></div>
+</main>
+
+<div id="app-footer"></div>
+<div id="app-overlay"></div>
+
+<script src="/js/config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/offline.js"></script>
+<script>
+  function botCard(bot) {
+    return `
+      <div class="app-card" data-bot-id="${bot._id}">
+        <div class="flex-between">
+          <h3>${bot.botName}</h3>
+          <span class="badge"><span class="status-dot ${bot.status === 'ACTIVE' ? 'active' : bot.status === 'BUILDING' ? 'building' : 'stopped'}"></span>${bot.status}</span>
+        </div>
+        <p class="text-muted">Platform: ${bot.hostingPlatform} &middot; Number: ${bot.whatsappNumber || 'N/A'}</p>
+        <div class="bot-actions">
+          <button class="btn btn-outline btn-sm" onclick="toggleLogs('${bot._id}')"><i class="fa-solid fa-terminal"></i> Logs</button>
+          <button class="btn btn-outline btn-sm" onclick="botAction('${bot._id}','restart')"><i class="fa-solid fa-rotate"></i> Restart</button>
+          <button class="btn btn-outline btn-sm" onclick="botAction('${bot._id}','stop')"><i class="fa-solid fa-stop"></i> Stop</button>
+          <button class="btn btn-outline btn-sm" onclick="location.href='/pages/deployment.html?botId=${bot._id}&redeploy=1'"><i class="fa-solid fa-arrows-rotate"></i> Change Number</button>
+          <button class="btn btn-outline btn-sm" onclick="openChangePlatform('${bot._id}')"><i class="fa-solid fa-server"></i> Change Platform</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete('${bot._id}')"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>
+        <div class="logs-box" id="logs-${bot._id}"></div>
+      </div>
+    `;
+  }
+
+  async function load() {
+    if (!Auth.requireLogin()) return;
+    const container = document.getElementById('manageContainer');
+    try {
+      const bots = await Api.getMyBots();
+      if (!bots.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon"><i class="fa-solid fa-box-open"></i></div>
+            <h3>You Haven't Deployed a Bot Yet</h3>
+            <p>Deploy your first bot to see controls, live logs, and status here.</p>
+            <a href="/pages/available-bots.html" class="btn btn-primary" style="margin-top:14px;">Deploy Bot Now</a>
+          </div>`;
+        return;
+      }
+
+      const isDeployer = Auth.isDeployer();
+      const activeCount = bots.filter(b => b.status === 'ACTIVE').length;
+
+      container.innerHTML = `
+        ${isDeployer ? `
+        <div class="stats-row">
+          <div class="stat-box"><div class="value">${bots.length}</div><div class="label">Total Deployed</div></div>
+          <div class="stat-box"><div class="value">${activeCount}</div><div class="label">Active</div></div>
+          <div class="stat-box"><div class="value">${bots.length - activeCount}</div><div class="label">Inactive</div></div>
+        </div>` : ''}
+        <div class="cards-grid">${bots.map(botCard).join('')}</div>
+      `;
+    } catch (err) {
+      container.innerHTML = `<div class="empty-state"><p>${err.message || 'Could not load your bots.'}</p></div>`;
+    }
+  }
+
+  async function toggleLogs(botId) {
+    const box = document.getElementById(`logs-${botId}`);
+    box.classList.toggle('show');
+    if (box.classList.contains('show') && !box.dataset.loaded) {
+      box.textContent = 'Fetching live logs...';
+      try {
+        const res = await Api.botAction(botId, 'logs');
+        box.textContent = res.logs || 'No logs yet.';
+        box.dataset.loaded = '1';
+      } catch (err) {
+        box.textContent = `Could not load logs: ${err.message}`;
+      }
+    }
+  }
+
+  async function botAction(botId, action) {
+    if (!NetworkGuard.requireOnline()) return;
+    try {
+      await Api.botAction(botId, action);
+      UI.showToast(`Bot ${action} requested.`, 'success');
+      load();
+    } catch (err) {
+      UI.showToast(err.message || `Could not ${action} bot.`, 'error');
+    }
+  }
+
+  function confirmDelete(botId) {
+    UI.showModal('Delete Deployment?', 'Your bot will be removed from cloud servers and stop working on WhatsApp.', {
+      confirmText: 'Yes, Delete Permanently', cancelText: 'Cancel',
+      onConfirm: async () => {
+        if (!NetworkGuard.requireOnline()) return;
+        try { await Api.deleteBot(botId); UI.showToast('Bot deleted.', 'success'); load(); }
+        catch (err) { UI.showToast(err.message || 'Could not delete bot.', 'error'); }
+      }
+    });
+  }
+
+  function openChangePlatform(botId) {
+    UI.showModal('Change Platform', 'This will move your bot to a new host using the same session — no duplicate will be created. Continue?', {
+      confirmText: 'Continue', cancelText: 'Cancel',
+      onConfirm: () => window.location.href = `/pages/deployment.html?botId=${botId}&changePlatform=1`
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
+
