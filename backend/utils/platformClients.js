@@ -24,10 +24,12 @@ const koyeb = {
       return { status: 'DOWN', message: 'API is not responding.' };
     }
   },
-  async deploy({ sessionId, botName, prefix, githubRepo }) {
-    // TODO: call Koyeb's app-creation endpoint with env vars:
-    // SESSION_ID, BOT_NAME, PREFIX, and the chosen githubRepo.
-    return { remoteAppId: `koyeb-${Date.now()}` };
+  async deploy({ appName, sessionId, botName, prefix, githubRepo }) {
+    // TODO: call Koyeb's app-creation endpoint with:
+    //   name: appName  (already lowercase/DNS-safe — see utils/slug.js)
+    //   env: SESSION_ID, BOT_NAME, PREFIX
+    //   git: { repository: githubRepo, branch: 'main' }
+    return { remoteAppId: `koyeb-${appName}` };
   },
   async updateEnv(remoteAppId, env) {
     // TODO: PATCH the Koyeb service's environment variables.
@@ -52,9 +54,9 @@ const render = {
       return { status: 'DOWN', message: 'API is not responding.' };
     }
   },
-  async deploy({ sessionId, botName, prefix, githubRepo }) {
-    // TODO: call Render's Background Worker creation endpoint.
-    return { remoteAppId: `render-${Date.now()}` };
+  async deploy({ appName, sessionId, botName, prefix, githubRepo }) {
+    // TODO: call Render's Background Worker creation endpoint with `name: appName`.
+    return { remoteAppId: `render-${appName}` };
   },
   async updateEnv(remoteAppId, env) { return true; },
   async destroy(remoteAppId) { return true; }
